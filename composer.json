@@ -1,0 +1,69 @@
+{
+    "name": "tobento/service-queue",
+    "type": "library",
+    "description": "A queue system for processing jobs in background.",
+    "keywords": [
+        "tobento",
+        "package",
+        "PHP",
+        "queue"
+    ],
+    "homepage": "https://www.tobento.ch",
+    "license": "MIT",
+    "authors": [
+        {
+            "name": "Tobias Strub",
+            "email": "info@tobento.ch",
+            "homepage": "https://www.tobento.ch"
+        }
+    ],
+    "minimum-stability": "dev",
+    "prefer-stable": true,
+    "require": {
+        "php": ">=8.0",
+        "psr/container": "^2.0",
+        "psr/log": "^1.1 || ^2.0 || ^3.0",
+        "psr/simple-cache": "2 - 3",
+        "psr/clock": "^1.0",
+        "tobento/service-autowire": "^1.0.9"
+    },
+    "suggest": {
+        "tobento/service-console": "To run queue worker via console commands",
+        "tobento/service-event": "Used for console commands to write events",
+        "tobento/service-encryption": "To support job encryption",
+        "tobento/service-storage": "To support storage queue",
+        "tobento/service-clock": "To support storage queue",
+        "tobento/service-database": "To support storage queue factory",
+        "tobento/service-cache": "May be used for unique jobs"
+    },
+    "require-dev": {
+        "phpunit/phpunit": "^9.5",
+        "vimeo/psalm": "^4.0",
+        "tobento/service-container": "^1.0.6",
+        "tobento/service-cache": "^1.0",
+        "tobento/service-clock": "^1.0",
+        "tobento/service-console": "^1.0.3",
+        "tobento/service-encryption": "^1.0",
+        "tobento/service-storage": "^1.2.5",
+        "tobento/service-database": "^1.1.2",
+        "tobento/service-collection": "^1.0.5",
+        "tobento/service-event": "^1.0",
+        "monolog/monolog": "^2.3",
+        "mockery/mockery": "^1.6"
+    },
+    "autoload": {
+        "psr-4": {
+            "Tobento\\Service\\Queue\\": "src"
+        }
+    },
+    "autoload-dev": {
+        "psr-4": {
+            "Tobento\\Service\\Queue\\Test\\": "tests",
+            "Tobento\\Service\\Console\\Test\\": "vendor/tobento/service-console/tests"
+        }
+    },
+    "scripts": {
+        "test": "phpunit --testdox --colors=always",
+        "psalm": "vendor/bin/psalm"
+    }
+}
