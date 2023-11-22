@@ -31,7 +31,7 @@ interface QueuesInterface
      *
      * @param string $name
      * @return null|QueueInterface
-     * @throws QueueException If queue does not exist
+     * @throws QueueException
      */
     public function get(string $name): null|QueueInterface;
     
