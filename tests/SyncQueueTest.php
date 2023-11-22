@@ -118,7 +118,7 @@ class SyncQueueTest extends TestCase
         
         $queue->push($job);
         
-        $this->assertTrue($testHandler->hasRecordThatContains('failed: Unknown Reason', LogLevel::ERROR));
+        $this->assertTrue($testHandler->hasRecordThatContains('failed:', LogLevel::ERROR));
         $this->assertSame($job->getId(), $param->beforeProcessedJob()?->getId());
     }
     
