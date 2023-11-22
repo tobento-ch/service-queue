@@ -19,6 +19,7 @@ A queue system for processing jobs in background.
         - [Duration Parameter](#duration-parameter)
         - [Encrypt Parameter](#encrypt-parameter)
         - [Failed Parameter](#failed-parameter)
+        - [Monitor Parameter](#monitor-parameter)
         - [Priority Parameter](#priority-parameter)
         - [Pushing Parameter](#pushing-parameter)
         - [Queue Parameter](#queue-parameter)
@@ -142,6 +143,7 @@ You may use the ```CallableJob::class``` to create jobs.
 Parameters of the class constructor must be optional ```null|(type)``` if they cannot be resolved by the container!
 
 ```php
+use Tobento\Service\Queue\CallableJob;
 use Tobento\Service\Queue\JobInterface;
 
 final class MailJob extends CallableJob
@@ -337,9 +339,29 @@ You may create a custom encrypt parameter to use another encrypter or to customi
 
 ### Failed Parameter
 
-The failed parameter will be added to the job by the [Worker](#worker) when the job processing fails.
+The failed parameter may be used by other parameters to signalize that a job failed for a certain reason. For instance, the [Duration Parameter](#duration-parameter) adds the parameter if the jobs's timeout limit is reached.
 
-The [Failed Job Handler](#failed-job-handler) uses the parameter to handle the failed job based on the reason failed.
+```php
+use Tobento\Service\Queue\Parameter\Failed;
+
+$job->parameter(new Failed(reason: Failed::TIMEOUT_LIMIT));
+```
+
+In addition, the [Failed Job Handler](#failed-job-handler) uses the parameter to handle failed jobs based on the reason failed.
+
+### Monitor Parameter
+
+The monitor parameter is added by the [Worker](#worker) and may be used to log data about jobs such as the runtime in seconds and the memory usage. For instance, the parameter is used by the [Work Command](#work-command) to write its data to the console.
+
+```php
+use Tobento\Service\Queue\Parameter\Monitor;
+
+if ($job->parameters()->has(Monitor::class)) {
+    $monitor = $job->parameters()->get(Monitor::class);
+    $runtimeInSeconds = $monitor->runtimeInSeconds();
+    $memoryUsage = $monitor->memoryUsage();
+}
+```
 
 ### Priority Parameter
 
@@ -558,13 +580,13 @@ composer require tobento/service-clock
 Finally, create the queue:
 
 ```php
-use Tobento\Service\Queue\StorageQueue;
+use Tobento\Service\Queue\Storage;
 use Tobento\Service\Queue\QueueInterface;
 use Tobento\Service\Queue\JobProcessorInterface;
 use Tobento\Service\Storage\StorageInterface;
 use Psr\Clock\ClockInterface;
 
-$queue = new StorageQueue(
+$queue = new Storage\Queue(
     name: 'storage',
     jobProcessor: $jobProcessor, // JobProcessorInterface
     storage: $storage, // StorageInterface
