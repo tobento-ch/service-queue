@@ -77,7 +77,7 @@ class FailedJobHandlerTest extends TestCase
         $this->assertSame(1, $queue->size());
     }
     
-    public function testJobIsRepushedOnTimeoutLimitReason()
+    public function testJobIsRetriedOnTimeoutLimitReason()
     {
         $jobProcessor = new JobProcessor(new Container());
         $queue = new InMemoryQueue(name: 'primary', jobProcessor: $jobProcessor);
@@ -134,7 +134,7 @@ class FailedJobHandlerTest extends TestCase
         $handler->handleFailedJob(job: $job);
         
         $this->assertSame(0, $queue->size());
-        $this->assertTrue($testHandler->hasRecordThatContains('Missing queue to repush job', LogLevel::ERROR));
+        $this->assertTrue($testHandler->hasRecordThatContains('failed: Unknown Reason', LogLevel::ERROR));
     }
     
     public function testJobIsNotRepushedIfQueueParameterDoesNotExistsAndGetsLogged()
@@ -156,7 +156,7 @@ class FailedJobHandlerTest extends TestCase
         $handler->handleFailedJob(job: $job);
         
         $this->assertSame(0, $queue->size());
-        $this->assertTrue($testHandler->hasRecordThatContains('Missing queue to repush job', LogLevel::ERROR));
+        $this->assertTrue($testHandler->hasRecordThatContains('failed: Unknown Reason', LogLevel::ERROR));
     }
     
     public function testJobIsLogged()
@@ -184,9 +184,8 @@ class FailedJobHandlerTest extends TestCase
         $handler->handleFailedJob(job: $job);
         $this->assertTrue($testHandler->hasRecordThatContains('Timeout limit', LogLevel::ERROR));
         
-        $job = (new Mock\CallableJob())
-            ->parameter(new Parameter\Failed(Parameter\Failed::UNIQUE));
-        $handler->handleFailedJob(job: $job);
-        $this->assertTrue($testHandler->hasRecordThatContains('Unique', LogLevel::ERROR));
+        $job = new Mock\CallableJob();
+        $handler->handleFailedJob(job: $job, e: new \Exception('message'));
+        $this->assertTrue($testHandler->hasRecordThatContains('message', LogLevel::ERROR));
     }
 }
