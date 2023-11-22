@@ -61,7 +61,7 @@ class WorkCommandTest extends TestCase
         ->execute($container);
     }
     
-    public function AtestWithEvents()
+    public function testWithEvents()
     {
         $container = new Container();
         $jobProcessor = new JobProcessor($container);
