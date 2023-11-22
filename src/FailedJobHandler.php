@@ -59,6 +59,32 @@ class FailedJobHandler implements FailedJobHandlerInterface
     }
     
     /**
+     * Handle jobs that are finally failed.
+     *
+     * @param JobInterface $job
+     * @param null|Throwable $e
+     * @return void
+     */
+    protected function finallyFailed(JobInterface $job, null|Throwable $e): void
+    {
+        $reason = $job->parameters()->get(Parameter\Failed::class)?->reason();
+        
+        if (!is_null($e)) {
+            $this->logJob($e->getMessage(), $job, $e);
+            return;
+        }
+        
+        $message = match (true) {
+            $reason === Parameter\Failed::TIMED_OUT => 'Timed out',
+            $reason === Parameter\Failed::TIMEOUT_LIMIT => 'Timeout limit',
+            $reason === Parameter\Failed::UNIQUE => 'Unique',
+            default => 'Unknown Reason',
+        };
+        
+        $this->logJob($message, $job, $e);
+    }
+    
+    /**
      * Handle failed job.
      *
      * @param JobInterface $job
@@ -67,8 +93,6 @@ class FailedJobHandler implements FailedJobHandlerInterface
      */
     protected function handleFailed(JobInterface $job, null|Throwable $e): void
     {
-        $this->logJob('Unknown Reason', $job, $e);
-        
         $this->retryJob($job, $e);
     }
 
@@ -81,8 +105,6 @@ class FailedJobHandler implements FailedJobHandlerInterface
      */
     protected function handleTimedOut(JobInterface $job, null|Throwable $e): void
     {
-        $this->logJob('Timed out', $job, $e);
-        
         $this->retryJob($job, $e);
     }
     
@@ -95,9 +117,11 @@ class FailedJobHandler implements FailedJobHandlerInterface
      */
     protected function handleTimeoutLimit(JobInterface $job, null|Throwable $e): void
     {
-        $this->logJob('Timeout limit', $job, $e);
+        if (! $job->parameters()->has(Parameter\Retry::class)) {
+            $job->parameter(new Parameter\Retry(max: 3));
+        }
         
-        $this->repushJob($job, $e);
+        $this->retryJob($job, $e);
     }
     
     /**
@@ -109,7 +133,7 @@ class FailedJobHandler implements FailedJobHandlerInterface
      */
     protected function handleUnique(JobInterface $job, null|Throwable $e): void
     {
-        $this->logJob('Unique', $job, $e);
+        // we do nothing as the unique parameter repushes the job with a delay!
     }
     
     /**
@@ -124,11 +148,12 @@ class FailedJobHandler implements FailedJobHandlerInterface
         $retry = $job->parameters()->get(Parameter\Retry::class);
         
         if (is_null($retry)) {
+            $this->finallyFailed($job, $e);
             return;
         }
         
         if ($retry->isMaxReached()) {
-            $this->logJob('Max retries reached', $job, $e);
+            $this->finallyFailed($job, $e);
             return;
         }
         
@@ -147,20 +172,17 @@ class FailedJobHandler implements FailedJobHandlerInterface
     protected function repushJob(JobInterface $job, null|Throwable $e): void
     {
         $queue = $job->parameters()->get(Parameter\Queue::class);
-        
-        if (is_null($queue)) {
-            $this->logJob('Missing queue to repush job', $job, $e);
+                
+        if (
+            !is_null($queue)
+            && !is_null($this->queues)
+            && $this->queues->has(name: $queue->name())
+        ) {
+            $this->queues->queue(name: $queue->name())->push($job);
             return;
         }
-                
-        if (!is_null($this->queues)) {
-            if ($this->queues->has(name: $queue->name())) {
-                $this->queues->queue(name: $queue->name())->push($job);
-                $this->logJob('Repushed job', $job, $e);
-            } else {
-                $this->logJob('Missing queue to repush job', $job, $e);
-            }
-        }
+        
+        $this->finallyFailed($job, $e);
     }
     
     /**
