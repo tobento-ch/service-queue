@@ -73,11 +73,6 @@ final class SyncQueue implements QueueInterface
         try {
             $pocessableJob = $this->jobProcessor->beforeProcessJob($job);
             
-            if (is_null($pocessableJob)) {
-                $this->handleFailedJob($job);
-                return $job->getId();
-            }
-            
             $this->eventDispatcher?->dispatch(new Event\JobStarting($job));
             
             $this->jobProcessor->processJob($pocessableJob);
@@ -86,7 +81,6 @@ final class SyncQueue implements QueueInterface
             
             $this->eventDispatcher?->dispatch(new Event\JobFinished($job));
         } catch (Throwable $e) {
-            
             $this->jobProcessor->processFailedJob($job, $e);
             $this->handleFailedJob($job, $e);
             $this->eventDispatcher?->dispatch(new Event\JobFailed($job, $e));
@@ -99,10 +93,10 @@ final class SyncQueue implements QueueInterface
      * Handle the failed job.
      *
      * @param JobInterface $job
-     * @param null|Throwable $e
+     * @param Throwable $e
      * @return void
      */
-    private function handleFailedJob(JobInterface $job, null|Throwable $e = null): void
+    private function handleFailedJob(JobInterface $job, Throwable $e): void
     {
         if (is_null($this->failedJobHandlerFactory)) {
             return;

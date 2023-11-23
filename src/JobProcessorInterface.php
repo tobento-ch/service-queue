@@ -42,10 +42,10 @@ interface JobProcessorInterface
      * Before process job.
      *
      * @param JobInterface $job
-     * @return null|JobInterface Null if job cannot be processed.
+     * @return JobInterface
      * @throws Throwable
      */
-    public function beforeProcessJob(JobInterface $job): null|JobInterface;
+    public function beforeProcessJob(JobInterface $job): JobInterface;
     
     /**
      * After process job.
@@ -80,9 +80,9 @@ interface JobProcessorInterface
      * Process failed job.
      *
      * @param JobInterface $job
-     * @param null|Throwable $e
+     * @param Throwable $e
      * @return void
      * @throws Throwable
      */
-    public function processFailedJob(JobInterface $job, null|Throwable $e): void;
+    public function processFailedJob(JobInterface $job, Throwable $e): void;
 }

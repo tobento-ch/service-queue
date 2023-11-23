@@ -46,7 +46,7 @@ class DelayTest extends TestCase
         
         $this->assertTrue($job->parameters()->has(Delay::class));
         
-        $param->getFailedJobHandler()($job, null);
+        $param->getFailedJobHandler()($job, new \Exception('message'));
         
         $this->assertFalse($job->parameters()->has(Delay::class));
     }

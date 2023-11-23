@@ -24,6 +24,7 @@ use Tobento\Service\Queue\Parameter\Failed;
 use Tobento\Service\Queue\Queues;
 use Tobento\Service\Queue\InMemoryQueue;
 use Tobento\Service\Queue\JobProcessor;
+use Tobento\Service\Queue\JobSkipException;
 use Tobento\Service\Queue\Test\Mock;
 use Tobento\Service\Queue\Test\Helper;
 use Tobento\Service\Container\Container;
@@ -69,13 +70,18 @@ class UniqueTest extends TestCase
         // should be requeued and delayed as same job is already running:
         $param = new Unique();
         $job = (new Mock\CallableJob(id: 'foo'))->queue('primary')->parameter($param);
-        $beforeJob = $param->getBeforeProcessJobHandler()($job, $cache, $queues);
         
-        $this->assertNull($beforeJob);
+        $throwedException = false;
+        try {
+            $beforeJob = $param->getBeforeProcessJobHandler()($job, $cache, $queues);
+        } catch (JobSkipException $e) {
+            $throwedException = true;
+        }
+        $this->assertTrue($throwedException);
+
         $this->assertSame(1, $queue->size());
         $poppedJob = $queue->pop();
         $this->assertSame(30, $poppedJob?->parameters()->get(Delay::class)?->seconds());
-        $this->assertSame(Failed::UNIQUE, $poppedJob?->parameters()->get(Failed::class)?->reason());
         $this->assertTrue($cache->has('job-processing:foo'));
         
         // after process job, cache item gets deleted:
@@ -104,13 +110,18 @@ class UniqueTest extends TestCase
         // should be requeued and delayed as same job is already running:
         $param = new Unique(id: 'bar', delayInSeconds: 45);
         $job = (new Mock\CallableJob(id: 'baz'))->queue('primary')->parameter($param);
-        $beforeJob = $param->getBeforeProcessJobHandler()($job, $cache, $queues);
         
-        $this->assertNull($beforeJob);
+        $throwedException = false;
+        try {
+            $beforeJob = $param->getBeforeProcessJobHandler()($job, $cache, $queues);
+        } catch (JobSkipException $e) {
+            $throwedException = true;
+        }
+        $this->assertTrue($throwedException);
+        
         $this->assertSame(1, $queue->size());
         $poppedJob = $queue->pop();
         $this->assertSame(45, $poppedJob?->parameters()->get(Delay::class)?->seconds());
-        $this->assertSame(Failed::UNIQUE, $poppedJob?->parameters()->get(Failed::class)?->reason());
         
         $this->assertTrue($cache->has('job-processing:bar'));
         
@@ -144,7 +155,13 @@ class UniqueTest extends TestCase
             ->duration(10)
             ->parameter($param);
         
-        $beforeJob = $param->getBeforeProcessJobHandler()($job, $cache, $queues);
+        $throwedException = false;
+        try {
+            $beforeJob = $param->getBeforeProcessJobHandler()($job, $cache, $queues);
+        } catch (JobSkipException $e) {
+            $throwedException = true;
+        }
+        $this->assertTrue($throwedException);
 
         $this->assertSame(10, $queue->pop()?->parameters()->get(Delay::class)?->seconds());
     }
@@ -163,7 +180,7 @@ class UniqueTest extends TestCase
         
         $param = new Unique();
         $job = (new Mock\CallableJob(id: 'foo'))->queue('primary')->parameter($param);
-        $param->getFailedJobHandler()($job, null, $cache);
+        $param->getFailedJobHandler()($job, new \Exception('message'), $cache);
         
         $this->assertFalse($cache->has('job-processing:foo'));
     }

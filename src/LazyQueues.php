@@ -85,7 +85,10 @@ final class LazyQueues implements QueuesInterface, QueueInterface
         // create queue from callable:
         if (is_callable($this->queues[$name])) {
             try {
-                return $this->autowire->call($this->queues[$name], ['name' => $name]);
+                return $this->createdQueues[$name] = $this->autowire->call(
+                    $this->queues[$name],
+                    ['name' => $name],
+                );
             } catch (Throwable $e) {
                 throw new QueueException($e->getMessage(), (int)$e->getCode(), $e);
             }

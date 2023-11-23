@@ -15,6 +15,7 @@ namespace Tobento\Service\Queue\Parameter;
 
 use Tobento\Service\Queue\JobInterface;
 use Tobento\Service\Queue\QueuesInterface;
+use Tobento\Service\Queue\JobSkipException;
 use Tobento\Service\Queue\JobException;
 use Psr\SimpleCache\CacheInterface;
 use JsonSerializable;
@@ -92,9 +93,10 @@ class Unique extends Parameter implements JsonSerializable, Processable, Failabl
      * @param JobInterface $job
      * @param CacheInterface $cache
      * @param QueuesInterface $queues
-     * @return null|JobInterface Null if job cannot be processed.
+     * @return JobInterface
+     * @throws \Throwable
      */
-    public function beforeProcessJob(JobInterface $job, CacheInterface $cache, QueuesInterface $queues): null|JobInterface
+    public function beforeProcessJob(JobInterface $job, CacheInterface $cache, QueuesInterface $queues): JobInterface
     {
         if ($cache->has($this->getJobCacheKey($job))) {
             
@@ -112,11 +114,13 @@ class Unique extends Parameter implements JsonSerializable, Processable, Failabl
                 seconds: is_null($durationInSeconds) ? $this->delayInSeconds : $durationInSeconds
             ));
             
-            $job->parameter(new Failed(Failed::UNIQUE));
-            
             $queues->get($queueName)?->push($job);
             
-            return null;
+            throw new JobSkipException(
+                job: $job,
+                message: 'Job running in another process',
+                retry: false, // set to false as we repushed the job above with a delay
+            );
         }
         
         // add to cache so we can determine if the job is processing:
@@ -143,11 +147,11 @@ class Unique extends Parameter implements JsonSerializable, Processable, Failabl
      * Process failed job.
      *
      * @param JobInterface $job
-     * @param null|Throwable $e
+     * @param Throwable $e
      * @param CacheInterface $cache
      * @return void
      */
-    public function processFailedJob(JobInterface $job, null|Throwable $e, CacheInterface $cache): void
+    public function processFailedJob(JobInterface $job, Throwable $e, CacheInterface $cache): void
     {
         $cache->delete($this->getJobCacheKey($job));
     }

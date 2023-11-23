@@ -19,6 +19,7 @@ use Tobento\Service\Queue\Parameter\Failed;
 use Tobento\Service\Queue\Parameter\SecondsBeforeTimingOut;
 use Tobento\Service\Queue\ParameterInterface;
 use Tobento\Service\Queue\Parameter\Processable;
+use Tobento\Service\Queue\JobSkipException;
 use Tobento\Service\Queue\Test\Mock;
 use JsonSerializable;
 
@@ -40,19 +41,18 @@ class DurationTest extends TestCase
         $this->assertSame(['seconds' => 60], $param->jsonSerialize());
     }
     
-    public function testAddsFailedParameterWhenTimeoutLimitExceeds()
+    public function testThrowsJobSkipExceptionWhenTimeoutLimitExceeds()
     {
+        $this->expectException(JobSkipException::class);
+        $this->expectExceptionMessage('Not enough seconds left to run the job');
+        
         $param = new Duration(seconds: 60);
         
         $job = (new Mock\CallableJob(id: 'foo'))
             ->parameter($param)
             ->parameter(new SecondsBeforeTimingOut(30));
         
-        $this->assertFalse($job->parameters()->has(Failed::class));
-        
-        $param->getBeforeProcessJobHandler()($job);
-        
-        $this->assertSame(Failed::TIMEOUT_LIMIT, $job->parameters()->get(Failed::class)?->reason());
+        $param->getBeforeProcessJobHandler()($job, new \Exception('message'));
     }
     
     public function testClassSpecificMethods()

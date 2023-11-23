@@ -65,10 +65,10 @@ class Delay extends Parameter implements JsonSerializable, Failable
      * Process failed job.
      *
      * @param JobInterface $job
-     * @param null|Throwable $e
+     * @param Throwable $e
      * @return void
      */
-    public function processFailedJob(JobInterface $job, null|Throwable $e): void
+    public function processFailedJob(JobInterface $job, Throwable $e): void
     {
         // Remove delay on failing, as the job might get repushed when failing:
         $job->parameters()->remove(Delay::class);

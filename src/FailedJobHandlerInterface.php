@@ -24,8 +24,8 @@ interface FailedJobHandlerInterface
      * Handle the failed job.
      *
      * @param JobInterface $job
-     * @param null|Throwable $e
+     * @param Throwable $e
      * @return void
      */
-    public function handleFailedJob(JobInterface $job, null|Throwable $e = null): void;
+    public function handleFailedJob(JobInterface $job, Throwable $e): void;
 }

@@ -122,7 +122,7 @@ class SyncQueueTest extends TestCase
         $this->assertSame($job->getId(), $param->beforeProcessedJob()?->getId());
     }
     
-    public function testFailedJobHandlerIsCalledWhenBeforeProcessReturningNull()
+    public function testFailedJobHandlerIsCalledWhenBeforeProcessThrowsException()
     {
         $logger = new Logger('name');
         $testHandler = new TestHandler();
@@ -140,7 +140,7 @@ class SyncQueueTest extends TestCase
         
         $queue->push($job);
         
-        $this->assertTrue($testHandler->hasRecordThatContains('failed: Unknown Reason', LogLevel::ERROR));
+        $this->assertTrue($testHandler->hasRecordThatContains('failed:', LogLevel::ERROR));
         $this->assertSame($job->getId(), $param->beforeProcessedJob()?->getId());
     }
     

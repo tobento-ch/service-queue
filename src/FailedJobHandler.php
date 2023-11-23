@@ -16,6 +16,7 @@ namespace Tobento\Service\Queue;
 use Psr\Log\LoggerInterface;
 use Psr\Log\LogLevel;
 use Tobento\Service\Queue\Parameter;
+use Tobento\Service\Queue\JobSkipException;
 use Throwable;
 
 /**
@@ -43,17 +44,13 @@ class FailedJobHandler implements FailedJobHandlerInterface
      * Handle the failed job.
      *
      * @param JobInterface $job
-     * @param null|Throwable $e
+     * @param Throwable $e
      * @return void
      */
-    public function handleFailedJob(JobInterface $job, null|Throwable $e = null): void
+    public function handleFailedJob(JobInterface $job, Throwable $e): void
     {
-        $reason = $job->parameters()->get(Parameter\Failed::class)?->reason();
-        
         match (true) {
-            $reason === Parameter\Failed::TIMED_OUT => $this->handleTimedOut($job, $e),
-            $reason === Parameter\Failed::TIMEOUT_LIMIT => $this->handleTimeoutLimit($job, $e),
-            $reason === Parameter\Failed::UNIQUE => $this->handleUnique($job, $e),
+            $e instanceof JobSkipException => $this->handleSkippedJob($job, $e),
             default => $this->handleFailed($job, $e),
         };
     }
@@ -62,61 +59,39 @@ class FailedJobHandler implements FailedJobHandlerInterface
      * Handle jobs that are finally failed.
      *
      * @param JobInterface $job
-     * @param null|Throwable $e
+     * @param Throwable $e
      * @return void
      */
-    protected function finallyFailed(JobInterface $job, null|Throwable $e): void
+    protected function finallyFailed(JobInterface $job, Throwable $e): void
     {
-        $reason = $job->parameters()->get(Parameter\Failed::class)?->reason();
-        
-        if (!is_null($e)) {
-            $this->logJob($e->getMessage(), $job, $e);
-            return;
-        }
-        
-        $message = match (true) {
-            $reason === Parameter\Failed::TIMED_OUT => 'Timed out',
-            $reason === Parameter\Failed::TIMEOUT_LIMIT => 'Timeout limit',
-            $reason === Parameter\Failed::UNIQUE => 'Unique',
-            default => 'Unknown Reason',
-        };
-        
-        $this->logJob($message, $job, $e);
+        $this->logJob($e->getMessage(), $job, $e);
     }
     
     /**
      * Handle failed job.
      *
      * @param JobInterface $job
-     * @param null|Throwable $e
+     * @param Throwable $e
      * @return void
      */
-    protected function handleFailed(JobInterface $job, null|Throwable $e): void
+    protected function handleFailed(JobInterface $job, Throwable $e): void
     {
         $this->retryJob($job, $e);
     }
 
     /**
-     * Handle timed out job.
+     * Handle skipped job.
      *
      * @param JobInterface $job
-     * @param null|Throwable $e
+     * @param JobSkipException $e
      * @return void
      */
-    protected function handleTimedOut(JobInterface $job, null|Throwable $e): void
+    protected function handleSkippedJob(JobInterface $job, JobSkipException $e): void
     {
-        $this->retryJob($job, $e);
-    }
-    
-    /**
-     * Handle timeout limit job.
-     *
-     * @param JobInterface $job
-     * @param null|Throwable $e
-     * @return void
-     */
-    protected function handleTimeoutLimit(JobInterface $job, null|Throwable $e): void
-    {
+        if (! $e->retry()) {
+            return;
+        }
+        
         if (! $job->parameters()->has(Parameter\Retry::class)) {
             $job->parameter(new Parameter\Retry(max: 3));
         }
@@ -125,25 +100,13 @@ class FailedJobHandler implements FailedJobHandlerInterface
     }
     
     /**
-     * Handle unique job.
-     *
-     * @param JobInterface $job
-     * @param null|Throwable $e
-     * @return void
-     */
-    protected function handleUnique(JobInterface $job, null|Throwable $e): void
-    {
-        // we do nothing as the unique parameter repushes the job with a delay!
-    }
-    
-    /**
      * Retry the job.
      *
      * @param JobInterface $job
-     * @param null|Throwable $e
+     * @param Throwable $e
      * @return void
      */
-    protected function retryJob(JobInterface $job, null|Throwable $e): void
+    protected function retryJob(JobInterface $job, Throwable $e): void
     {
         $retry = $job->parameters()->get(Parameter\Retry::class);
         
@@ -166,10 +129,10 @@ class FailedJobHandler implements FailedJobHandlerInterface
      * Repush the job.
      *
      * @param JobInterface $job
-     * @param null|Throwable $e
+     * @param Throwable $e
      * @return void
      */
-    protected function repushJob(JobInterface $job, null|Throwable $e): void
+    protected function repushJob(JobInterface $job, Throwable $e): void
     {
         $queue = $job->parameters()->get(Parameter\Queue::class);
                 
@@ -190,10 +153,10 @@ class FailedJobHandler implements FailedJobHandlerInterface
      *
      * @param string $message
      * @param JobInterface $job
-     * @param null|Throwable $e
+     * @param Throwable $e
      * @return void
      */
-    protected function logJob(string $message, JobInterface $job, null|Throwable $e): void
+    protected function logJob(string $message, JobInterface $job, Throwable $e): void
     {
         if (is_null($this->logger)) {
             return;

@@ -140,18 +140,12 @@ class Worker
         $job->parameter(new Parameter\Monitor());
         
         try {
-            $pocessableJob = $this->jobProcessor->beforeProcessJob($job);
-            
-            if (is_null($pocessableJob)) {
-                $this->failedJobHandler?->handleFailedJob($job);
-                return false;
-            }
+            $this->jobProcessor->beforeProcessJob($job);
+            return true;
         } catch (Throwable $e) {
-            $this->failedJobHandler?->handleFailedJob($job);
+            $this->failedJobHandler?->handleFailedJob($job, $e);
             return false;
         }
-        
-        return true;
     }
     
     /**

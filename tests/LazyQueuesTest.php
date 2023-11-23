@@ -57,6 +57,7 @@ class LazyQueuesTest extends TestCase
         $this->assertSame('primary', $queues->get('primary')?->name());
         $this->assertSame(100, $queues->get('primary')?->priority());
         $this->assertTrue($queues->has('primary'));
+        $this->assertSame($queues->get('primary'), $queues->get('primary'));
     }
     
     public function testUsingFactoryThrowsQueueExceptionOnFailure()
@@ -86,6 +87,7 @@ class LazyQueuesTest extends TestCase
         
         $this->assertSame('primary', $queues->get('primary')?->name());
         $this->assertTrue($queues->has('primary'));
+        $this->assertSame($queues->get('primary'), $queues->get('primary'));
     }
     
     public function testUsingClosureThrowsQueueExceptionOnFailure()
@@ -109,6 +111,7 @@ class LazyQueuesTest extends TestCase
         
         $this->assertSame('primary', $queues->get('primary')?->name());
         $this->assertTrue($queues->has('primary'));
+        $this->assertSame($queues->get('primary'), $queues->get('primary'));
     }
     
     public function testHasAndGetMethod()

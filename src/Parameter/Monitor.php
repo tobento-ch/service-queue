@@ -94,9 +94,9 @@ class Monitor extends Parameter implements Processable
      * Before process job handler.
      *
      * @param JobInterface $job
-     * @return null|JobInterface Null if job cannot be processed.
+     * @return JobInterface
      */
-    public function beforeProcessJob(JobInterface $job): null|JobInterface
+    public function beforeProcessJob(JobInterface $job): JobInterface
     {
         $this->startTime = hrtime(true);
         $this->startMemory = memory_get_usage(true);

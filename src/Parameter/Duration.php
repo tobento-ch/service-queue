@@ -14,6 +14,7 @@ declare(strict_types=1);
 namespace Tobento\Service\Queue\Parameter;
 
 use Tobento\Service\Queue\JobInterface;
+use Tobento\Service\Queue\JobSkipException;
 use JsonSerializable;
 
 /**
@@ -74,9 +75,10 @@ class Duration extends Parameter implements JsonSerializable, Processable
      * Before process job handler.
      *
      * @param JobInterface $job
-     * @return null|JobInterface Null if job cannot be processed.
+     * @return JobInterface
+     * @throws \Throwable
      */
-    public function beforeProcessJob(JobInterface $job): null|JobInterface
+    public function beforeProcessJob(JobInterface $job): JobInterface
     {
         $secondsRemaining = $job->parameters()->get(SecondsBeforeTimingOut::class)?->seconds();
         
@@ -85,8 +87,11 @@ class Duration extends Parameter implements JsonSerializable, Processable
         }
         
         if ($this->seconds() > $secondsRemaining) {
-            $job->parameter(new Failed(Failed::TIMEOUT_LIMIT));
-            return null;
+            throw new JobSkipException(
+                job: $job,
+                message: 'Not enough seconds left to run the job',
+                retry: true,
+            );
         }
         
         return $job;

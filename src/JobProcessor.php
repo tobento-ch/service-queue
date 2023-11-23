@@ -116,10 +116,10 @@ class JobProcessor implements JobProcessorInterface
      * Before process job.
      *
      * @param JobInterface $job
-     * @return null|JobInterface Null if job cannot be processed.
+     * @return JobInterface
      * @throws Throwable
      */
-    public function beforeProcessJob(JobInterface $job): null|JobInterface
+    public function beforeProcessJob(JobInterface $job): JobInterface
     {
         $autowire = new Autowire($this->container);
 
@@ -129,10 +129,6 @@ class JobProcessor implements JobProcessorInterface
                 && !is_null($handler = $parameter->getBeforeProcessJobHandler())
             ) {
                 $job = $autowire->call($handler, ['job' => $job]);
-                
-                if (is_null($job)) {
-                    return null;
-                }
             }
         }
 
@@ -215,11 +211,11 @@ class JobProcessor implements JobProcessorInterface
      * Process failed job.
      *
      * @param JobInterface $job
-     * @param null|Throwable $e
+     * @param Throwable $e
      * @return void
      * @throws Throwable
      */
-    public function processFailedJob(JobInterface $job, null|Throwable $e): void
+    public function processFailedJob(JobInterface $job, Throwable $e): void
     {
         $autowire = new Autowire($this->container);
         
