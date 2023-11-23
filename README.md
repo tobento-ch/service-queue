@@ -18,7 +18,6 @@ A queue system for processing jobs in background.
         - [Delay Parameter](#delay-parameter)
         - [Duration Parameter](#duration-parameter)
         - [Encrypt Parameter](#encrypt-parameter)
-        - [Failed Parameter](#failed-parameter)
         - [Monitor Parameter](#monitor-parameter)
         - [Priority Parameter](#priority-parameter)
         - [Pushing Parameter](#pushing-parameter)
@@ -336,18 +335,6 @@ $job = (new Job(name: 'sample'))
 ```
 
 You may create a custom encrypt parameter to use another encrypter or to customize the encryption.
-
-### Failed Parameter
-
-The failed parameter may be used by other parameters to signalize that a job failed for a certain reason. For instance, the [Duration Parameter](#duration-parameter) adds the parameter if the jobs's timeout limit is reached.
-
-```php
-use Tobento\Service\Queue\Parameter\Failed;
-
-$job->parameter(new Failed(reason: Failed::TIMEOUT_LIMIT));
-```
-
-In addition, the [Failed Job Handler](#failed-job-handler) uses the parameter to handle failed jobs based on the reason failed.
 
 ### Monitor Parameter
 
@@ -1134,11 +1121,11 @@ class SampleParameter extends Parameter implements Failable
      * Process failed job.
      *
      * @param JobInterface $job
-     * @param null|Throwable $e
+     * @param Throwable $e
      * @param ... any parameters resolvable by your container.
      * @return void
      */
-    public function processFailedJob(JobInterface $job, null|Throwable $e): void
+    public function processFailedJob(JobInterface $job, Throwable $e): void
     {
         //
     }
@@ -1235,9 +1222,9 @@ class SampleParameter extends Parameter implements Processable, JsonSerializable
      * Before process job handler.
      *
      * @param JobInterface $job
-     * @return null|JobInterface Null if job cannot be processed.
+     * @return JobInterface
      */
-    public function beforeProcessJob(JobInterface $job): null|JobInterface
+    public function beforeProcessJob(JobInterface $job): JobInterface
     {
         return $job;
     }
