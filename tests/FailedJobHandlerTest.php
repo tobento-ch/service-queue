@@ -17,16 +17,17 @@ use PHPUnit\Framework\TestCase;
 use Tobento\Service\Queue\Test\Mock;
 use Tobento\Service\Queue\FailedJobHandler;
 use Tobento\Service\Queue\FailedJobHandlerInterface;
+use Tobento\Service\Queue\JobInterface;
 use Tobento\Service\Queue\JobProcessor;
+use Tobento\Service\Queue\QueuesInterface;
 use Tobento\Service\Queue\Queues;
 use Tobento\Service\Queue\InMemoryQueue;
 use Tobento\Service\Queue\Parameter;
 use Tobento\Service\Queue\JobSkipException;
 use Tobento\Service\Container\Container;
-use Psr\Log\LogLevel;
-use Monolog\Logger;
-use Monolog\Handler\TestHandler;
+use Psr\Container\ContainerInterface;
 use Exception;
+use Throwable;
 
 class FailedJobHandlerTest extends TestCase
 {
@@ -92,17 +93,24 @@ class FailedJobHandlerTest extends TestCase
         $this->assertSame(0, $queue->size());
     }
     
-    public function testJobIsNotRepushedIfQueueDoesNotExistsAndGetsLogged()
+    public function testJobIsNotRepushedIfQueueDoesNotExistsAndFinallyFailedMethodIsCalled()
     {
-        $logger = new Logger('name');
-        $testHandler = new TestHandler();
-        $logger->pushHandler($testHandler);
-        
-        $jobProcessor = new JobProcessor(new Container());
+        $container = new Container();
+        $jobProcessor = new JobProcessor($container);
         $queue = new InMemoryQueue(name: 'primary', jobProcessor: $jobProcessor);
         $queues = new Queues($queue);
-        $handler = new FailedJobHandler(queues: $queues, logger: $logger);
-                
+        
+        $handler = new class($container, $queues) extends FailedJobHandler {
+            public function __construct(
+                protected ContainerInterface $container,
+                protected null|QueuesInterface $queues = null,
+            ) {}
+            protected function finallyFailed(JobInterface $job, Throwable $e): void
+            {
+                $this->container->set('failedJob', $job);
+            }
+        };
+        
         $this->assertSame(0, $queue->size());
         
         $job = (new Mock\CallableJob())
@@ -112,20 +120,27 @@ class FailedJobHandlerTest extends TestCase
         $handler->handleFailedJob(job: $job, e: new Exception('message'));
         
         $this->assertSame(0, $queue->size());
-        $this->assertTrue($testHandler->hasRecordThatContains('message', LogLevel::ERROR));
+        $this->assertTrue($container->has('failedJob'));
     }
     
-    public function testJobIsNotRepushedIfQueueParameterDoesNotExistsAndGetsLogged()
+    public function testJobIsNotRepushedIfQueueParameterDoesNotExistsAndFinallyFailedMethodIsCalled()
     {
-        $logger = new Logger('name');
-        $testHandler = new TestHandler();
-        $logger->pushHandler($testHandler);
-        
-        $jobProcessor = new JobProcessor(new Container());
+        $container = new Container();
+        $jobProcessor = new JobProcessor($container);
         $queue = new InMemoryQueue(name: 'primary', jobProcessor: $jobProcessor);
         $queues = new Queues($queue);
-        $handler = new FailedJobHandler(queues: $queues, logger: $logger);
-                
+
+        $handler = new class($container, $queues) extends FailedJobHandler {
+            public function __construct(
+                protected ContainerInterface $container,
+                protected null|QueuesInterface $queues = null,
+            ) {}
+            protected function finallyFailed(JobInterface $job, Throwable $e): void
+            {
+                $this->container->set('failedJob', $job);
+            }
+        };
+        
         $this->assertSame(0, $queue->size());
         
         $job = (new Mock\CallableJob())
@@ -134,22 +149,29 @@ class FailedJobHandlerTest extends TestCase
         $handler->handleFailedJob(job: $job, e: new Exception('message'));
         
         $this->assertSame(0, $queue->size());
-        $this->assertTrue($testHandler->hasRecordThatContains('message', LogLevel::ERROR));
+        $this->assertTrue($container->has('failedJob'));
     }
     
-    public function testJobIsLogged()
+    public function testJobFinallyFailedMethodIsCalledWhenNoRetriedAtAll()
     {
-        $logger = new Logger('name');
-        $testHandler = new TestHandler();
-        $logger->pushHandler($testHandler);
-        
-        $jobProcessor = new JobProcessor(new Container());
+        $container = new Container();
+        $jobProcessor = new JobProcessor($container);
         $queue = new InMemoryQueue(name: 'primary', jobProcessor: $jobProcessor);
         $queues = new Queues($queue);
-        $handler = new FailedJobHandler(queues: $queues, logger: $logger);
+
+        $handler = new class($container, $queues) extends FailedJobHandler {
+            public function __construct(
+                protected ContainerInterface $container,
+                protected null|QueuesInterface $queues = null,
+            ) {}
+            protected function finallyFailed(JobInterface $job, Throwable $e): void
+            {
+                $this->container->set('failedJob', $job);
+            }
+        };
         
         $job = new Mock\CallableJob();
         $handler->handleFailedJob(job: $job, e: new \Exception('message'));
-        $this->assertTrue($testHandler->hasRecordThatContains('message', LogLevel::ERROR));
+        $this->assertTrue($container->has('failedJob'));
     }
 }
