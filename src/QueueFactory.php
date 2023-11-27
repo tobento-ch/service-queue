@@ -24,12 +24,10 @@ class QueueFactory implements QueueFactoryInterface
      * Create a new QueueFactory.
      *
      * @param JobProcessorInterface $jobProcessor
-     * @param null|FailedJobHandlerFactoryInterface $failedJobHandlerFactory
      * @param null|EventDispatcherInterface $eventDispatcher
      */
     public function __construct(
         protected JobProcessorInterface $jobProcessor,
-        protected null|FailedJobHandlerFactoryInterface $failedJobHandlerFactory = null,
         protected null|EventDispatcherInterface $eventDispatcher = null,
     ) {}
     
@@ -70,7 +68,6 @@ class QueueFactory implements QueueFactoryInterface
             return new SyncQueue(
                 name: $name,
                 jobProcessor: $this->jobProcessor,
-                failedJobHandlerFactory: $this->failedJobHandlerFactory,
                 eventDispatcher: $this->eventDispatcher,
                 priority: $config['priority'] ?? 100,
             );
