@@ -13,8 +13,6 @@ declare(strict_types=1);
 
 namespace Tobento\Service\Queue;
 
-use Psr\Log\LoggerInterface;
-use Psr\Log\LogLevel;
 use Tobento\Service\Queue\Parameter;
 use Tobento\Service\Queue\JobSkipException;
 use Throwable;
@@ -25,19 +23,12 @@ use Throwable;
 class FailedJobHandler implements FailedJobHandlerInterface
 {
     /**
-     * The log level used for the logger.
-     */
-    protected const LOG_LEVEL = LogLevel::ERROR;
-    
-    /**
      * Create a new FailedJobHandler.
      *
      * @param null|QueuesInterface $queues
-     * @param null|LoggerInterface $logger
      */
     public function __construct(
         protected null|QueuesInterface $queues = null,
-        protected null|LoggerInterface $logger = null,
     ) {}
     
     /**
@@ -56,6 +47,17 @@ class FailedJobHandler implements FailedJobHandlerInterface
     }
     
     /**
+     * Handle exception thrown by the worker e.g.
+     *
+     * @param Throwable $e
+     * @return void
+     */
+    public function handleException(Throwable $e): void
+    {
+        //
+    }
+    
+    /**
      * Handle jobs that are finally failed.
      *
      * @param JobInterface $job
@@ -64,7 +66,7 @@ class FailedJobHandler implements FailedJobHandlerInterface
      */
     protected function finallyFailed(JobInterface $job, Throwable $e): void
     {
-        $this->logJob($e->getMessage(), $job, $e);
+        //
     }
     
     /**
@@ -146,32 +148,5 @@ class FailedJobHandler implements FailedJobHandlerInterface
         }
         
         $this->finallyFailed($job, $e);
-    }
-    
-    /**
-     * Logs the job.
-     *
-     * @param string $message
-     * @param JobInterface $job
-     * @param Throwable $e
-     * @return void
-     */
-    protected function logJob(string $message, JobInterface $job, Throwable $e): void
-    {
-        if (is_null($this->logger)) {
-            return;
-        }
-
-        $this->logger->log(
-            static::LOG_LEVEL,
-            sprintf('Job %s with the id %s failed: %s', $job->getName(), $job->getId(), $message),
-            [
-                'name' => $job->getName(),
-                'id' => $job->getId(),
-                'payload' => $job->getPayload(),
-                'parameters' => $job->parameters()->jsonSerialize(),
-                'exception' => $e,
-            ]
-        );
     }
 }
