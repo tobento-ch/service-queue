@@ -39,7 +39,6 @@ A queue system for processing jobs in background.
     - [Job Processor](#job-processor)
         - [Adding Job Handlers](#adding-job-handlers)
     - [Failed Job Handler](#failed-job-handler)
-    - [Failed Job Handler Factory](#failed-job-handler-factory)
     - [Worker](#worker)
         - [Running Worker](#running-worker)
         - [Running Worker Using Commands](#running-worker-using-commands)
@@ -607,13 +606,11 @@ The ```SyncQueue::class``` does dispatch jobs immediately without queuing.
 use Tobento\Service\Queue\SyncQueue;
 use Tobento\Service\Queue\QueueInterface;
 use Tobento\Service\Queue\JobProcessorInterface;
-use Tobento\Service\Queue\FailedJobHandlerFactoryInterface;
 use Psr\EventDispatcher\EventDispatcherInterface;
 
 $queue = new SyncQueue(
     name: 'sync',
     jobProcessor: $jobProcessor, // JobProcessorInterface
-    failedJobHandlerFactory: null, // null|FailedJobHandlerFactoryInterface
     eventDispatcher: null, // null|EventDispatcherInterface
     priority: 100,
 );
@@ -885,45 +882,67 @@ The ```FailedJobHandler::class``` is responsible for handling failed jobs.
 use Tobento\Service\Queue\FailedJobHandler;
 use Tobento\Service\Queue\FailedJobHandlerInterface;
 use Tobento\Service\Queue\QueuesInterface;
-use Psr\Log\LoggerInterface;
 
 $handler = new FailedJobHandler(
     queues: $queues, // QueuesInterface
-    
-    // set a logger if you want to log failed jobs:
-    logger: $logger, // null|LoggerInterface
 );
 
 var_dump($handler instanceof FailedJobHandlerInterface);
 // bool(true)
 ```
 
-You may create a custom handler to fit your requirements.
+After a failed job has exceeded the number of attempts defined with the [Retry Parameter](#retry-parameter), the job will be lost.
 
-## Failed Job Handler Factory
-
-You may use the ```FailedJobHandlerFactory::class``` to create failed job handlers:
+You may extend ```FailedJobHandler::class``` and handle the finally failed jobs by using the ```finallyFailed``` method for storing the jobs in a database or simply log them:
 
 ```php
-use Tobento\Service\Queue\FailedJobHandlerFactory;
-use Tobento\Service\Queue\FailedJobHandlerFactoryInterface;
-use Tobento\Service\Queue\FailedJobHandlerInterface;
+use Tobento\Service\Queue\FailedJobHandler;
 use Tobento\Service\Queue\QueuesInterface;
+use Tobento\Service\Queue\JobInterface;
 use Psr\Log\LoggerInterface;
 
-$factory = new FailedJobHandlerFactory(
-    logger: null, // null|LoggerInterface
-);
+class LogFailedJobHandler extends FailedJobHandler
+{
+    public function __construct(
+        protected null|QueuesInterface $queues = null,
+        protected null|LoggerInterface $logger = null,
+    ) {}
+    
+    protected function finallyFailed(JobInterface $job, \Throwable $e): void
+    {
+        if (is_null($this->logger)) {
+            return;
+        }
 
-var_dump($factory instanceof FailedJobHandlerFactoryInterface);
-// bool(true)
+        $this->logger->error(
+            sprintf('Job %s with the id %s failed: %s', $job->getName(), $job->getId(), $e->getMessage()),
+            [
+                'name' => $job->getName(),
+                'id' => $job->getId(),
+                'payload' => $job->getPayload(),
+                'parameters' => $job->parameters()->jsonSerialize(),
+                'exception' => $e,
+            ]
+        );
+    }
+    
+    /**
+     * Handle exception thrown by the worker e.g.
+     */
+    public function handleException(\Throwable $e): void
+    {
+        if (is_null($this->logger)) {
+            return;
+        }
 
-$handler = $factory->createFailedJobHandler(
-    queues: null, // null|QueuesInterface
-);
-
-var_dump($handler instanceof FailedJobHandlerInterface);
-// bool(true)
+        $this->logger->error(
+            sprintf('Queue exception: %s', $e->getMessage()),
+            [
+                'exception' => $e,
+            ]
+        );
+    }
+}
 ```
 
 ## Worker
