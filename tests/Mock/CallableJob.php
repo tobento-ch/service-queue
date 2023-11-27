@@ -47,7 +47,7 @@ final class CallableJob extends Job
     public function handleJob(JobInterface $job): void
     {
         if ($this->failingJob) {
-            throw \Exception('failing job');
+            throw new \Exception('failing job');
         }
         
         $this->handledJob = $job;
