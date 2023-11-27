@@ -28,4 +28,12 @@ interface FailedJobHandlerInterface
      * @return void
      */
     public function handleFailedJob(JobInterface $job, Throwable $e): void;
+    
+    /**
+     * Handle exception thrown by the worker e.g.
+     *
+     * @param Throwable $e
+     * @return void
+     */
+    public function handleException(Throwable $e): void;
 }
