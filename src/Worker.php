@@ -117,6 +117,7 @@ class Worker
 
             return $this->queues->get(name: (string)$queue)?->pop();
         } catch (Throwable $e) {
+            $this->failedJobHandler?->handleException($e);
             $this->eventDispatcher?->dispatch(new Event\PoppingJobFailed($e, $queue));
             return null;
         }
