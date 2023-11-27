@@ -22,7 +22,6 @@
     "require": {
         "php": ">=8.0",
         "psr/container": "^2.0",
-        "psr/log": "^1.1 || ^2.0 || ^3.0",
         "psr/simple-cache": "2 - 3",
         "psr/clock": "^1.0",
         "tobento/service-autowire": "^1.0.9"
@@ -48,7 +47,6 @@
         "tobento/service-database": "^1.1.2",
         "tobento/service-collection": "^1.0.5",
         "tobento/service-event": "^1.0",
-        "monolog/monolog": "^2.3",
         "mockery/mockery": "^1.6"
     },
     "autoload": {
