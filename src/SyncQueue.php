@@ -26,14 +26,12 @@ final class SyncQueue implements QueueInterface
      *
      * @param string $name
      * @param JobProcessorInterface $jobProcessor
-     * @param null|FailedJobHandlerFactoryInterface $failedJobHandlerFactory
      * @param null|EventDispatcherInterface $eventDispatcher
      * @param int $priority
      */
     public function __construct(
         private string $name,
         private JobProcessorInterface $jobProcessor,
-        private null|FailedJobHandlerFactoryInterface $failedJobHandlerFactory = null,
         private null|EventDispatcherInterface $eventDispatcher = null,
         private int $priority = 100,
     ) {}
@@ -82,31 +80,11 @@ final class SyncQueue implements QueueInterface
             $this->eventDispatcher?->dispatch(new Event\JobFinished($job));
         } catch (Throwable $e) {
             $this->jobProcessor->processFailedJob($job, $e);
-            $this->handleFailedJob($job, $e);
             $this->eventDispatcher?->dispatch(new Event\JobFailed($job, $e));
+            throw $e;
         }
         
         return $job->getId();
-    }
-    
-    /**
-     * Handle the failed job.
-     *
-     * @param JobInterface $job
-     * @param Throwable $e
-     * @return void
-     */
-    private function handleFailedJob(JobInterface $job, Throwable $e): void
-    {
-        if (is_null($this->failedJobHandlerFactory)) {
-            return;
-        }
-        
-        $handler = $this->failedJobHandlerFactory->createFailedJobHandler(
-            queues: new Queues($this)
-        );
-        
-        $handler->handleFailedJob($job, $e);
     }
     
     /**
