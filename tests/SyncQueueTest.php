@@ -18,14 +18,11 @@ use Tobento\Service\Queue\Test\Mock;
 use Tobento\Service\Queue\SyncQueue;
 use Tobento\Service\Queue\QueueInterface;
 use Tobento\Service\Queue\JobProcessor;
-use Tobento\Service\Queue\FailedJobHandlerFactory;
 use Tobento\Service\Queue\Event;
 use Tobento\Service\Container\Container;
 use Tobento\Service\Event\Events;
 use Tobento\Service\Collection\Collection;
-use Psr\Log\LogLevel;
-use Monolog\Logger;
-use Monolog\Handler\TestHandler;
+use Throwable;
 
 class SyncQueueTest extends TestCase
 {
@@ -100,16 +97,13 @@ class SyncQueueTest extends TestCase
         $this->assertSame($job->getId(), $param->afterProcessedJob()?->getId());
     }
     
-    public function testFailedJobHandlerIsCalledWhenJobFails()
+    public function testThrowsExceptionWhenJobFails()
     {
-        $logger = new Logger('name');
-        $testHandler = new TestHandler();
-        $logger->pushHandler($testHandler);
+        $this->expectException(\Exception::class);
         
         $queue = new SyncQueue(
             name: 'primary',
             jobProcessor: new JobProcessor(new Container()),
-            failedJobHandlerFactory: new FailedJobHandlerFactory(logger: $logger),
         );
         
         $param = new Mock\ProcessableParameter();
@@ -117,31 +111,6 @@ class SyncQueueTest extends TestCase
         $job = (new Mock\CallableJob(failingJob: true))->parameter($param);
         
         $queue->push($job);
-        
-        $this->assertTrue($testHandler->hasRecordThatContains('failed:', LogLevel::ERROR));
-        $this->assertSame($job->getId(), $param->beforeProcessedJob()?->getId());
-    }
-    
-    public function testFailedJobHandlerIsCalledWhenBeforeProcessThrowsException()
-    {
-        $logger = new Logger('name');
-        $testHandler = new TestHandler();
-        $logger->pushHandler($testHandler);
-        
-        $queue = new SyncQueue(
-            name: 'primary',
-            jobProcessor: new JobProcessor(new Container()),
-            failedJobHandlerFactory: new FailedJobHandlerFactory(logger: $logger),
-        );
-        
-        $param = new Mock\ProcessableParameter(unprocessableBeforeJob: true);
-        
-        $job = (new Mock\CallableJob())->parameter($param);
-        
-        $queue->push($job);
-        
-        $this->assertTrue($testHandler->hasRecordThatContains('failed:', LogLevel::ERROR));
-        $this->assertSame($job->getId(), $param->beforeProcessedJob()?->getId());
     }
     
     public function testPopMethod()
@@ -238,8 +207,12 @@ class SyncQueueTest extends TestCase
         );
         
         $job = new Mock\CallableJob(failingJob: true);
-                
-        $queue->push($job);
+        
+        try {
+            $queue->push($job);   
+        } catch (Throwable $e) {
+            
+        }
         
         $this->assertTrue($job === $collection->get('job'));
     }
