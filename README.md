@@ -24,6 +24,7 @@ A queue system for processing jobs in background.
         - [Queue Parameter](#queue-parameter)
         - [Retry Parameter](#retry-parameter)
         - [Unique Parameter](#unique-parameter)
+        - [Without Overlapping Parameter](#without-overlapping-parameter)
     - [Dispatching Jobs](#dispatching-jobs)
     - [Queue](#queue)
         - [In Memory Queue](#in-memory-queue)
@@ -374,8 +375,8 @@ use Tobento\Service\Queue\Parameter;
     
 $job = (new Job(name: 'sample'))
     ->parameter(new Parameter\Pushing(
-        handler: function(JobInterface $job, AnyResolvableClass $foo): void {
-            //
+        handler: function(JobInterface $job, AnyResolvableClass $foo): JobInterface {
+            return $job;
         },
         
         // you may set a priority. Higher gets executed first:
@@ -420,7 +421,7 @@ The [Failed Job Handler](#failed-job-handler) uses the parameter to handle the r
 
 ### Unique Parameter
 
-If you add the unique parameter, the job will only be processed once at a time to prevent overlapping.
+The unique parameter will prevent any new, duplicate jobs from entering the queue while another instance of that job is queued or processing.
 
 ```php
 use Tobento\Service\Queue\Job;
@@ -433,6 +434,50 @@ $job = (new Job(name: 'sample'))
     ))
     // or using helper method:
     ->unique(id: null);
+```
+
+The parameter requires a ```CacheInterface::class``` to be binded to your container passed to the [JobProcessor](#job-processor):
+
+Example using the [Cache Service](https://github.com/tobento-ch/service-cache) and [Container Service](https://github.com/tobento-ch/service-container):
+
+```php
+use Tobento\Service\Queue\JobProcessor;
+use Tobento\Service\Container\Container;
+use Psr\SimpleCache\CacheInterface;
+use Tobento\Service\Cache\Simple\Psr6Cache;
+use Tobento\Service\Cache\ArrayCacheItemPool;
+use Tobento\Service\Clock\SystemClock;
+
+$container = new Container();
+$container->set(CacheInterface::class, function() {
+    // create cache:
+    return new Psr6Cache(
+        pool: new ArrayCacheItemPool(
+            clock: new SystemClock(),
+        ),
+        namespace: 'default',
+        ttl: null,
+    );
+});
+
+$jobProcessor = new JobProcessor($container);
+```
+
+### Without Overlapping Parameter
+
+If you add the without overlapping parameter, the job will only be processed once at a time to prevent overlapping.
+
+```php
+use Tobento\Service\Queue\Job;
+use Tobento\Service\Queue\Parameter;
+
+$job = (new Job(name: 'sample'))
+    ->parameter(new Parameter\WithoutOverlapping(
+        // A unique id. If null it uses the job id.
+        id: null, // null|string
+    ))
+    // or using helper method:
+    ->withoutOverlapping(id: null);
 ```
 
 The parameter requires a ```CacheInterface::class``` to be binded to your container passed to the [JobProcessor](#job-processor):
