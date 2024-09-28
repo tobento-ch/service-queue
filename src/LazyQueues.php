@@ -238,8 +238,8 @@ final class LazyQueues implements QueuesInterface, QueueInterface
         $jobs = [];
         
         foreach(array_keys($this->queues) as $name) {
-            foreach($this->queue($name)->getAllJobs() as $key => $job) {
-                $jobs[$key] = $job;
+            foreach($this->queue($name)->getAllJobs() as $job) {
+                $jobs[] = $job;
             }
         }
         

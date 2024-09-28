@@ -183,8 +183,8 @@ final class Queues implements QueuesInterface, QueueInterface
         $jobs = [];
         
         foreach($this->queues as $queue) {
-            foreach($queue->getAllJobs() as $key => $job) {
-                $jobs[$key] = $job;
+            foreach($queue->getAllJobs() as $job) {
+                $jobs[] = $job;
             }
         }
         
