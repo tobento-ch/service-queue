@@ -15,6 +15,7 @@ namespace Tobento\Service\Queue\Storage;
 
 use Tobento\Service\Queue\JobInterface;
 use Tobento\Service\Queue\Job;
+use Tobento\Service\Queue\JobSkipException;
 use Tobento\Service\Queue\QueueInterface;
 use Tobento\Service\Queue\JobProcessorInterface;
 use Tobento\Service\Queue\Parameter;
@@ -91,7 +92,11 @@ final class Queue implements QueueInterface
      */
     public function push(JobInterface $job): string
     {
-        $job = $this->jobProcessor->processPushingJob($job, $this);
+        try {
+            $job = $this->jobProcessor->processPushingJob($job, $this);
+        } catch (JobSkipException $e) {
+            return $job->getId();
+        }
         
         // Get the priority if any defined:
         $priority = (int) $job->parameters()->get(Parameter\Priority::class)?->priority();

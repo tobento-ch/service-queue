@@ -66,7 +66,11 @@ final class SyncQueue implements QueueInterface
     {
         $job->parameters()->remove(Parameter\Delay::class);
         
-        $job = $this->jobProcessor->processPushingJob($job, $this);
+        try {
+            $job = $this->jobProcessor->processPushingJob($job, $this);
+        } catch (JobSkipException $e) {
+            return $job->getId();
+        }
         
         try {
             $pocessableJob = $this->jobProcessor->beforeProcessJob($job);
