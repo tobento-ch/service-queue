@@ -18,6 +18,7 @@ use Tobento\Service\Queue\Test\Mock;
 use Tobento\Service\Queue\SyncQueue;
 use Tobento\Service\Queue\QueueInterface;
 use Tobento\Service\Queue\JobProcessor;
+use Tobento\Service\Queue\JobSkipException;
 use Tobento\Service\Queue\Event;
 use Tobento\Service\Container\Container;
 use Tobento\Service\Event\Events;
@@ -78,6 +79,22 @@ class SyncQueueTest extends TestCase
         
         $this->assertSame($job->getId(), $param->pushedJob()?->getId());
         $this->assertSame('primary', $param->pushedQueue()?->name());
+    }
+    
+    public function testSkippedJobsAreNotProcessed()
+    {
+        $queue = new SyncQueue(
+            name: 'primary',
+            jobProcessor: new JobProcessor(new Container()),
+        );
+        
+        $job = (new Mock\CallableJob(id: 'foo'))->pushing(function() {
+            throw new JobSkipException;
+        });
+        
+        $jobId = $queue->push($job);
+
+        $this->assertSame(0, $job->processed());
     }
     
     public function testJobIsProcessedWithBeforeAfterProcesses()

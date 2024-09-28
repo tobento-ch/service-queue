@@ -14,6 +14,7 @@ declare(strict_types=1);
 namespace Tobento\Service\Queue\Test\Parameter;
 
 use PHPUnit\Framework\TestCase;
+use Psr\SimpleCache\CacheInterface;
 use Tobento\Service\Queue\Parameter\Unique;
 use Tobento\Service\Queue\ParameterInterface;
 use Tobento\Service\Queue\Parameter\Processable;
@@ -21,7 +22,6 @@ use Tobento\Service\Queue\Parameter\Failable;
 use Tobento\Service\Queue\Parameter\Delay;
 use Tobento\Service\Queue\Parameter\Duration;
 use Tobento\Service\Queue\Parameter\Failed;
-use Tobento\Service\Queue\Queues;
 use Tobento\Service\Queue\InMemoryQueue;
 use Tobento\Service\Queue\JobProcessor;
 use Tobento\Service\Queue\JobSkipException;
@@ -49,140 +49,71 @@ class UniqueTest extends TestCase
         $this->assertSame(['id' => 'foo'], $param->jsonSerialize());
     }
     
-    public function testGetsRequeuedWithDelayIfJobIsInProcess()
+    public function testJobGetsQueuedOnce()
     {
+        $container = new Container();
         $cache = Helper::createCache();
+        $container->set(CacheInterface::class, $cache);
         
         $queue = new InMemoryQueue(
             name: 'primary',
-            jobProcessor: new JobProcessor(new Container()),
+            jobProcessor: new JobProcessor($container),
         );
         
-        $queues = new Queues($queue);
-        
-        $param = new Unique();
-        $job = (new Mock\CallableJob(id: 'foo'))->queue('primary')->parameter($param);
-        $beforeJob = $param->getBeforeProcessJobHandler()($job, $cache, $queues);
-        
-        $this->assertFalse($beforeJob->parameters()->has(Delay::class));
-        $this->assertSame(0, $queue->size());
-        
-        // should be requeued and delayed as same job is already running:
-        $param = new Unique();
-        $job = (new Mock\CallableJob(id: 'foo'))->queue('primary')->parameter($param);
-        
-        $throwedException = false;
-        try {
-            $beforeJob = $param->getBeforeProcessJobHandler()($job, $cache, $queues);
-        } catch (JobSkipException $e) {
-            $throwedException = true;
-        }
-        $this->assertTrue($throwedException);
+        $job = (new Mock\CallableJob(id: 'foo'))->parameter(new Unique());
 
-        $this->assertSame(1, $queue->size());
-        $poppedJob = $queue->pop();
-        $this->assertSame(30, $poppedJob?->parameters()->get(Delay::class)?->seconds());
-        $this->assertTrue($cache->has('job-processing:foo'));
-        
-        // after process job, cache item gets deleted:
-        $afterJob = $param->getAfterProcessJobHandler()($poppedJob, $cache);
-        $this->assertFalse($cache->has('job-processing:foo'));
-    }
-    
-    public function testGetsRequeuedWithDelayIfJobIsInProcessWithSpecifiedParams()
-    {
-        $cache = Helper::createCache();
-        
-        $queue = new InMemoryQueue(
-            name: 'primary',
-            jobProcessor: new JobProcessor(new Container()),
-        );
-        
-        $queues = new Queues($queue);
-        
-        $param = new Unique(id: 'bar', delayInSeconds: 45);
-        $job = (new Mock\CallableJob(id: 'foo'))->queue('primary')->parameter($param);
-        $beforeJob = $param->getBeforeProcessJobHandler()($job, $cache, $queues);
-        
-        $this->assertFalse($beforeJob->parameters()->has(Delay::class));
-        $this->assertSame(0, $queue->size());
-        
-        // should be requeued and delayed as same job is already running:
-        $param = new Unique(id: 'bar', delayInSeconds: 45);
-        $job = (new Mock\CallableJob(id: 'baz'))->queue('primary')->parameter($param);
-        
-        $throwedException = false;
-        try {
-            $beforeJob = $param->getBeforeProcessJobHandler()($job, $cache, $queues);
-        } catch (JobSkipException $e) {
-            $throwedException = true;
-        }
-        $this->assertTrue($throwedException);
+        $queue->push($job);
+        $queue->push($job);
+        $queue->push($job);
         
         $this->assertSame(1, $queue->size());
-        $poppedJob = $queue->pop();
-        $this->assertSame(45, $poppedJob?->parameters()->get(Delay::class)?->seconds());
-        
-        $this->assertTrue($cache->has('job-processing:bar'));
-        
-        // after process job, cache item gets deleted:
-        $afterJob = $param->getAfterProcessJobHandler()($poppedJob, $cache);
-        $this->assertFalse($cache->has('job-processing:bar'));
     }
     
-    public function testUsesDurationParamForDelayIfExists()
+    public function testJobCanBeRequeuedAfterJobProcessed()
     {
+        $container = new Container();
         $cache = Helper::createCache();
+        $container->set(CacheInterface::class, $cache);
+        $jobProcessor = new JobProcessor($container);
         
         $queue = new InMemoryQueue(
             name: 'primary',
-            jobProcessor: new JobProcessor(new Container()),
+            jobProcessor: $jobProcessor,
         );
         
-        $queues = new Queues($queue);
+        $job = (new Mock\CallableJob(id: 'foo'))->parameter(new Unique());
+
+        $queue->push($job);
+        $queue->push($job);
+        $queue->push($job);
         
-        $param = new Unique();
-        $job = (new Mock\CallableJob(id: 'foo'))->queue('primary')->parameter($param);
-        $beforeJob = $param->getBeforeProcessJobHandler()($job, $cache, $queues);
+        $this->assertSame(1, $queue->size());
         
-        $this->assertFalse($beforeJob->parameters()->has(Delay::class));
+        $processedJob = $jobProcessor->afterProcessJob($queue->pop(), $queue);
+        
         $this->assertSame(0, $queue->size());
         
-        // should be requeued and delayed as same job is already running:
-        $param = new Unique();
-        $job = (new Mock\CallableJob(id: 'foo'))
-            ->queue('primary')
-            ->duration(10)
-            ->parameter($param);
+        $queue->push($job);
+        $queue->push($job);
         
-        $throwedException = false;
-        try {
-            $beforeJob = $param->getBeforeProcessJobHandler()($job, $cache, $queues);
-        } catch (JobSkipException $e) {
-            $throwedException = true;
-        }
-        $this->assertTrue($throwedException);
-
-        $this->assertSame(10, $queue->pop()?->parameters()->get(Delay::class)?->seconds());
+        $this->assertSame(1, $queue->size());
     }
     
     public function testCacheItemGetsDeletedOnJobFailing()
     {
         $cache = Helper::createCache();
-        $cache->set('job-processing:foo', 'job');
+        $cache->set('job-unique:foo', 'job');
         
         $queue = new InMemoryQueue(
             name: 'primary',
             jobProcessor: new JobProcessor(new Container()),
         );
         
-        $queues = new Queues($queue);
-        
         $param = new Unique();
         $job = (new Mock\CallableJob(id: 'foo'))->queue('primary')->parameter($param);
         $param->getFailedJobHandler()($job, new \Exception('message'), $cache);
         
-        $this->assertFalse($cache->has('job-processing:foo'));
+        $this->assertFalse($cache->has('job-unique:foo'));
     }
     
     public function testClassSpecificMethods()

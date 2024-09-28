@@ -221,8 +221,8 @@ class QueuesTest extends TestCase
         $queues->push($foo);
         $queues->push($bar);
         
-        $this->assertSame($foo, $queues->getAllJobs()['foo'] ?? null);
-        $this->assertSame($bar, $queues->getAllJobs()['bar'] ?? null);
+        $this->assertSame($foo, $queues->getAllJobs()[0] ?? null);
+        $this->assertSame($bar, $queues->getAllJobs()[1] ?? null);
     }
     
     public function testSizeMethod()

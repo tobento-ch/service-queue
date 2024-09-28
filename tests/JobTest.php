@@ -71,6 +71,7 @@ class JobTest extends TestCase
             ->retry(max: 2)
             ->delay(seconds: 5)
             ->unique()
+            ->withoutOverlapping()
             ->priority(100)
             ->pushing(function() {})
             ->encrypt();
@@ -81,6 +82,7 @@ class JobTest extends TestCase
         $this->assertTrue($job->parameters()->has(Parameter\Retry::class));
         $this->assertTrue($job->parameters()->has(Parameter\Delay::class));
         $this->assertTrue($job->parameters()->has(Parameter\Unique::class));
+        $this->assertTrue($job->parameters()->has(Parameter\WithoutOverlapping::class));
         $this->assertTrue($job->parameters()->has(Parameter\Priority::class));
         $this->assertTrue($job->parameters()->has(Parameter\Pushing::class));
         $this->assertTrue($job->parameters()->has(Parameter\Encrypt::class));

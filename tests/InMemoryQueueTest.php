@@ -18,6 +18,7 @@ use Tobento\Service\Queue\Test\Mock;
 use Tobento\Service\Queue\InMemoryQueue;
 use Tobento\Service\Queue\QueueInterface;
 use Tobento\Service\Queue\JobProcessor;
+use Tobento\Service\Queue\JobSkipException;
 use Tobento\Service\Queue\FailedJobHandlerFactory;
 use Tobento\Service\Container\Container;
 
@@ -74,6 +75,23 @@ class InMemoryQueueTest extends TestCase
         
         $this->assertSame($job->getId(), $param->pushedJob()?->getId());
         $this->assertSame('primary', $param->pushedQueue()?->name());
+    }
+    
+    public function testPushMethodSkippedJobsAreNotStored()
+    {
+        $queue = new InMemoryQueue(
+            name: 'primary',
+            jobProcessor: new JobProcessor(new Container()),
+        );
+                
+        $this->assertSame(0, $queue->size());
+        
+        $jobId = $queue->push((new Mock\CallableJob(id: 'foo'))->pushing(function() {
+            throw new JobSkipException;
+        }));
+
+        $this->assertSame('foo', $jobId);
+        $this->assertSame(0, $queue->size());
     }
     
     public function testPopMethod()
@@ -154,7 +172,7 @@ class InMemoryQueueTest extends TestCase
         $foo = new Mock\CallableJob(id: 'foo');
         $queue->push($foo);
         
-        $this->assertSame(['foo' => $foo], $queue->getAllJobs());
+        $this->assertSame([$foo], $queue->getAllJobs());
     }
     
     public function testSizeMethod()

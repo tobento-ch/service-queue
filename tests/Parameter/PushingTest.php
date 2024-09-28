@@ -43,8 +43,9 @@ class PushingTest extends TestCase
         
         $job = (new Mock\CallableJob(id: 'foo'))->parameter($param);
         
-        $param->getPushingJobHandler()($job, new NullQueue('name'), $container);
+        $pushedJob = $param->getPushingJobHandler()($job, new NullQueue('name'), $container);
         
+        $this->assertInstanceof(JobInterface::class, $pushedJob);
         $this->assertTrue($container->has('job'));
     }
 }
