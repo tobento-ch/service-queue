@@ -130,12 +130,25 @@ trait InteractsWithParameters
      * Specify if the job is unique.
      *
      * @param null|string $id A unique id. If null it uses the job id.
+     * @return static $this
+     */
+    public function unique(null|string $id = null): static
+    {
+        $this->parameters()->add(new Parameter\Unique(id: $id));
+        
+        return $this;
+    }
+    
+    /**
+     * Specify if the job is without overlapping.
+     *
+     * @param null|string $id A unique id. If null it uses the job id.
      * @param int The job delay in seconds as fallback if job has no duration parameter.
      * @return static $this
      */
-    public function unique(null|string $id = null, int $delayInSeconds = 30): static
+    public function withoutOverlapping(null|string $id = null, int $delayInSeconds = 30): static
     {
-        $this->parameters()->add(new Parameter\Unique(id: $id, delayInSeconds: $delayInSeconds));
+        $this->parameters()->add(new Parameter\WithoutOverlapping(id: $id, delayInSeconds: $delayInSeconds));
         
         return $this;
     }
