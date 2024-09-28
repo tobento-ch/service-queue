@@ -24,17 +24,15 @@ use Throwable;
 /**
  * Unique.
  */
-class Unique extends Parameter implements JsonSerializable, Processable, Failable
+class Unique extends Parameter implements JsonSerializable, Pushable, Processable, Failable
 {
     /**
      * Create a new Unique.
      *
      * @param null|string $id A unique id. If null it uses the job id.
-     * @param int $delayInSeconds The job delay in seconds as fallback if job has no duration parameter.
      */
     public function __construct(
         protected null|string $id = null,
-        protected int $delayInSeconds = 30,
     ) {}
     
     /**
@@ -58,13 +56,23 @@ class Unique extends Parameter implements JsonSerializable, Processable, Failabl
     }
     
     /**
+     * Returns the pushing job handler.
+     *
+     * @return callable
+     */
+    public function getPushingJobHandler(): callable
+    {
+        return [$this, 'pushingJob'];
+    }
+    
+    /**
      * Returns the before process job handler.
      *
      * @return null|callable
      */
     public function getBeforeProcessJobHandler(): null|callable
     {
-        return [$this, 'beforeProcessJob'];
+        return null;
     }
     
     /**
@@ -88,42 +96,23 @@ class Unique extends Parameter implements JsonSerializable, Processable, Failabl
     }
     
     /**
-     * Before process job handler.
+     * Pushing job.
      *
      * @param JobInterface $job
      * @param CacheInterface $cache
-     * @param QueuesInterface $queues
      * @return JobInterface
-     * @throws \Throwable
      */
-    public function beforeProcessJob(JobInterface $job, CacheInterface $cache, QueuesInterface $queues): JobInterface
+    public function pushingJob(JobInterface $job, CacheInterface $cache): JobInterface
     {
         if ($cache->has($this->getJobCacheKey($job))) {
-            
-            // If job is processing we simply delay the job
-            // based on the duration and repush it to the queue:
-            
-            $durationInSeconds = $job->parameters()->get(Duration::class)?->seconds();
-            $queueName = $job->parameters()->get(Queue::class)?->name();
-            
-            if (is_null($queueName)) {
-                throw new JobException($job, 'No queue name specified to process unique job');
-            }
-            
-            $job->parameter(new Delay(
-                seconds: is_null($durationInSeconds) ? $this->delayInSeconds : $durationInSeconds
-            ));
-            
-            $queues->get($queueName)?->push($job);
-            
             throw new JobSkipException(
                 job: $job,
-                message: 'Job running in another process',
-                retry: false, // set to false as we repushed the job above with a delay
+                message: 'Job already queued',
+                retry: false,
             );
         }
         
-        // add to cache so we can determine if the job is processing:
+        // add to cache so we can determine if the job is already queued:
         $cache->set(key: $this->getJobCacheKey($job), value: true);
         
         return $job;
@@ -166,6 +155,6 @@ class Unique extends Parameter implements JsonSerializable, Processable, Failabl
     {
         $uniqueId = $this->id() ?: $job->getId();
         
-        return 'job-processing:'.$uniqueId;
+        return 'job-unique:'.$uniqueId;
     }
 }
