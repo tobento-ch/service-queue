@@ -70,10 +70,10 @@ class Pushing extends Parameter implements Pushable
      *
      * @param JobInterface $job
      * @param QueueInterface $queue
-     * @return void
+     * @return JobInterface $job
      */
-    public function pushingJob(JobInterface $job, QueueInterface $queue, ContainerInterface $container): void
+    public function pushingJob(JobInterface $job, QueueInterface $queue, ContainerInterface $container): JobInterface
     {
-        (new Autowire($container))->call($this->handler(), ['job' => $job]);
+        return (new Autowire($container))->call($this->handler(), ['job' => $job]);
     }
 }
