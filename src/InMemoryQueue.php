@@ -21,7 +21,7 @@ use Throwable;
 final class InMemoryQueue implements QueueInterface
 {
     /**
-     * @var array<int, array<string, JobInterface>>
+     * @var array<int, array<array-key, JobInterface>>
      */
     private array $jobs = [];
     
@@ -66,12 +66,16 @@ final class InMemoryQueue implements QueueInterface
      */
     public function push(JobInterface $job): string
     {
-        $job = $this->jobProcessor->processPushingJob($job, $this);
+        try {
+            $job = $this->jobProcessor->processPushingJob($job, $this);
+        } catch (JobSkipException $e) {
+            return $job->getId();
+        }
         
         $priority = $job->parameters()->get(Parameter\Priority::class)?->priority();
         $priority = is_int($priority) ? $priority : 0;
         
-        $this->jobs[$priority][$job->getId()] = $job;
+        $this->jobs[$priority][] = $job;
         
         return $job->getId();
     }
@@ -121,8 +125,10 @@ final class InMemoryQueue implements QueueInterface
     public function getJob(string $id): null|JobInterface
     {
         foreach($this->jobs as $jobs) {
-            if (isset($jobs[$id])) {
-                return $jobs[$id];
+            foreach($jobs as $job) {
+                if ($job->getId() === $id) {
+                    return $job;
+                }
             }
         }
         
