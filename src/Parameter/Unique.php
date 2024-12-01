@@ -151,7 +151,7 @@ class Unique extends Parameter implements JsonSerializable, Pushable, Processabl
      * @param JobInterface $job
      * @return string
      */
-    protected function getJobCacheKey(JobInterface $job): string
+    public function getJobCacheKey(JobInterface $job): string
     {
         $uniqueId = $this->id() ?: $job->getId();
         
