@@ -13,8 +13,10 @@ declare(strict_types=1);
 
 namespace Tobento\Service\Queue\Console;
 
+use Psr\SimpleCache\CacheInterface;
 use Tobento\Service\Console\AbstractCommand;
 use Tobento\Service\Console\InteractorInterface;
+use Tobento\Service\Queue\Parameter\Unique;
 use Tobento\Service\Queue\QueuesInterface;
 
 class ClearCommand extends AbstractCommand
@@ -32,12 +34,13 @@ class ClearCommand extends AbstractCommand
      *
      * @param InteractorInterface $io
      * @param QueuesInterface $queues
+     * @param null|CacheInterface $cache
      * @return int The exit status code: 
      *     0 SUCCESS
      *     1 FAILURE If some error happened during the execution
      *     2 INVALID To indicate incorrect command usage e.g. invalid options
      */
-    public function handle(InteractorInterface $io, QueuesInterface $queues): int
+    public function handle(InteractorInterface $io, QueuesInterface $queues, null|CacheInterface $cache = null): int
     {
         $queueNames = $io->option(name: 'queue');
         
@@ -51,13 +54,26 @@ class ClearCommand extends AbstractCommand
                 continue;
             }
             
+            // clearing cache items from unique jobs:
+            if (!is_null($cache)) {
+                foreach($queues->queue($queueName)->getAllJobs() as $job) {
+                    if ($unique = $job->parameters()->get(Unique::class)) {
+                        $cacheKey = $unique->getJobCacheKey($job);
+                        
+                        if ($cache->has($cacheKey)) {
+                            $cache->delete($cacheKey);
+                        }
+                    }
+                }
+            }
+            
             if ($queues->queue($queueName)->clear()) {
                 $io->success(sprintf('Jobs cleared from queue %s', $queueName));
             } else {
                 $io->error(sprintf('Could not clear jobs from queue %s', $queueName));
             }
         }
-        
+
         return 0;
     }
 }
