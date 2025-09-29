@@ -109,6 +109,7 @@ class Monitor extends Parameter implements Processable
      *
      * @param JobInterface $job
      * @return JobInterface
+     * @psalm-suppress InvalidOperand
      */
     public function afterProcessJob(JobInterface $job): JobInterface
     {

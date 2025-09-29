@@ -56,6 +56,7 @@ class Worker
      * @param null|string $queue The queue name.
      * @param WorkerOptions $options
      * @return int The status (exit code)
+     * @psalm-suppress InvalidOperand
      */
     public function run(null|string $queue, WorkerOptions $options): int
     {
@@ -180,6 +181,7 @@ class Worker
      * @param int $jobsProcessed
      * @param null|JobInterface $job
      * @return int|null Status code to stop worker, otherwise null.
+     * @psalm-suppress InvalidOperand
      */
     protected function stopIfNecessary(
         WorkerOptions $options,
