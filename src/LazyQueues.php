@@ -102,7 +102,7 @@ final class LazyQueues implements QueuesInterface, QueueInterface
         try {
             $factory = $this->autowire->resolve($this->queues[$name]['factory']);
         } catch (AutowireException $e) {
-            throw new QueueException($e->getMessage(), (int)$e->getCode(), $e);
+            throw new QueueException($e->getMessage(), $e->getCode(), $e);
         }
         
         if (! $factory instanceof QueueFactoryInterface) {
