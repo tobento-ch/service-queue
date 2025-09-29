@@ -63,7 +63,6 @@ trait InteractsWithParameters
     /**
      * Encrypts the job.
      *
-     * @param int $priority
      * @return static $this
      */
     public function encrypt(): static
