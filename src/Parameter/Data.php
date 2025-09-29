@@ -55,7 +55,7 @@ class Data extends Parameter implements JsonSerializable
      * Returns the value from the specified key.
      *
      * @param string $key
-     * @param mixed $default
+     * @param mixed $value
      * @return static $this
      */
     public function set(string $key, mixed $value): static
