@@ -63,7 +63,7 @@ composer require tobento/service-queue
 
 ## Requirements
 
-- PHP 8.0 or greater
+- PHP 8.4 or greater
 
 ## Highlights
 
@@ -181,7 +181,7 @@ final class MailJob extends CallableJob
 Creating the job:
 
 ```php
-$job = (new MailJob($message))
+$job = new MailJob($message)
     ->renderTemplate();
 ```
 
@@ -193,7 +193,7 @@ You may use the available parameters providing basic features for jobs or [creat
 use Tobento\Service\Queue\Job;
 use Tobento\Service\Queue\Parameter;
 
-$job = (new Job(name: 'sample'))
+$job = new Job(name: 'sample')
     ->parameter(new Parameter\Duration(seconds: 10))
     ->parameter(new Parameter\Retry(max: 2));
 ```
@@ -206,7 +206,7 @@ The [Job](#job) and [Callable Job](#callable-job) support the following helper m
 use Tobento\Service\Queue\Job;
 use Tobento\Service\Queue\JobInterface;
 
-$job = (new Job(name: 'sample'))
+$job = new Job(name: 'sample')
     ->queue(name: 'secondary')
     ->data(['key' => 'value'])
     ->duration(seconds: 10)
@@ -247,7 +247,7 @@ Use the delay parameter to set the seconds the job needs to be delayed.
 use Tobento\Service\Queue\Job;
 use Tobento\Service\Queue\Parameter;
 
-$job = (new Job(name: 'sample'))
+$job = new Job(name: 'sample')
     ->parameter(new Parameter\Delay(seconds: 60))
     // or using helper method:
     ->delay(seconds: 60);
@@ -265,7 +265,7 @@ Use the data parameter to add additional job data.
 use Tobento\Service\Queue\Job;
 use Tobento\Service\Queue\Parameter;
 
-$job = (new Job(name: 'sample'))
+$job = new Job(name: 'sample')
     ->parameter(new Parameter\Data(['key' => 'value']))
     // or using helper method:
     ->data(['key' => 'value']);
@@ -279,7 +279,7 @@ Use the duration parameter to set the approximate duration the job needs to proc
 use Tobento\Service\Queue\Job;
 use Tobento\Service\Queue\Parameter;
 
-$job = (new Job(name: 'sample'))
+$job = new Job(name: 'sample')
     ->parameter(new Parameter\Duration(seconds: 10))
     // or using helper method:
     ->duration(seconds: 10);
@@ -328,7 +328,7 @@ Check out the [Crypto Implementation](https://github.com/tobento-ch/service-encr
 use Tobento\Service\Queue\Job;
 use Tobento\Service\Queue\Parameter;
 
-$job = (new Job(name: 'sample'))
+$job = new Job(name: 'sample')
     ->parameter(new Parameter\Encrypt())
     // or using helper method:
     ->encrypt();
@@ -358,7 +358,7 @@ Use the priority parameter to specify the priority of the job. Higher prioritize
 use Tobento\Service\Queue\Job;
 use Tobento\Service\Queue\Parameter;
 
-$job = (new Job(name: 'sample'))
+$job = new Job(name: 'sample')
     ->parameter(new Parameter\Priority(100))
     // or using helper method:
     ->priority(100);
@@ -373,7 +373,7 @@ use Tobento\Service\Queue\Job;
 use Tobento\Service\Queue\JobInterface;
 use Tobento\Service\Queue\Parameter;
     
-$job = (new Job(name: 'sample'))
+$job = new Job(name: 'sample')
     ->parameter(new Parameter\Pushing(
         handler: function(JobInterface $job, AnyResolvableClass $foo): JobInterface {
             return $job;
@@ -395,7 +395,7 @@ Use the queue parameter to specify the queue to push the job to.
 use Tobento\Service\Queue\Job;
 use Tobento\Service\Queue\Parameter;
 
-$job = (new Job(name: 'sample'))
+$job = new Job(name: 'sample')
     ->parameter(new Parameter\Queue(name: 'secondary'))
     // or using helper method:
     ->queue(name: 'secondary');
@@ -411,7 +411,7 @@ Use the retry parameter to specify the max number of retries.
 use Tobento\Service\Queue\Job;
 use Tobento\Service\Queue\Parameter;
 
-$job = (new Job(name: 'sample'))
+$job = new Job(name: 'sample')
     ->parameter(new Parameter\Retry(max: 2))
     // or using helper method:
     ->retry(max: 2);
@@ -427,7 +427,7 @@ The unique parameter will prevent any new, duplicate jobs from entering the queu
 use Tobento\Service\Queue\Job;
 use Tobento\Service\Queue\Parameter;
 
-$job = (new Job(name: 'sample'))
+$job = new Job(name: 'sample')
     ->parameter(new Parameter\Unique(
         // A unique id. If null it uses the job id.
         id: null, // null|string
@@ -471,7 +471,7 @@ If you add the without overlapping parameter, the job will only be processed onc
 use Tobento\Service\Queue\Job;
 use Tobento\Service\Queue\Parameter;
 
-$job = (new Job(name: 'sample'))
+$job = new Job(name: 'sample')
     ->parameter(new Parameter\WithoutOverlapping(
         // A unique id. If null it uses the job id.
         id: null, // null|string
@@ -1062,13 +1062,13 @@ Otherwise, you need to install the [Console Service](https://github.com/tobento-
 **Running jobs from all queues**
 
 ```
-php app queue:work
+php ap queue:work
 ```
 
 **Running jobs from specific queue only**
 
 ```
-php app queue:work --queue=primary
+php ap queue:work --queue=primary
 ```
 
 **Available Options**
@@ -1088,13 +1088,13 @@ php app queue:work --queue=primary
 **Delete all of the jobs from the queues**
 
 ```
-php app queue:clear
+php ap queue:clear
 ```
 
 **Delete jobs from specific queues only**
 
 ```
-php app queue:clear --queue=primary --queue=secondary
+php ap queue:clear --queue=primary --queue=secondary
 ```
 
 ## Events

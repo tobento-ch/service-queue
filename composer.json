@@ -1,5 +1,6 @@
 {
     "name": "tobento/service-queue",
+    "version": "2.0",
     "type": "library",
     "description": "A queue system for processing jobs in background.",
     "keywords": [
@@ -20,11 +21,11 @@
     "minimum-stability": "dev",
     "prefer-stable": true,
     "require": {
-        "php": ">=8.0",
+        "php": ">=8.4",
         "psr/container": "^2.0",
-        "psr/simple-cache": "2 - 3",
+        "psr/simple-cache": "3.0",
         "psr/clock": "^1.0",
-        "tobento/service-autowire": "^1.0.9"
+        "tobento/service-autowire": "^2.0"
     },
     "suggest": {
         "tobento/service-console": "To run queue worker via console commands",
@@ -36,17 +37,17 @@
         "tobento/service-cache": "May be used for unique jobs"
     },
     "require-dev": {
-        "phpunit/phpunit": "^9.5",
-        "vimeo/psalm": "^4.0",
-        "tobento/service-container": "^1.0.6",
-        "tobento/service-cache": "^1.0",
-        "tobento/service-clock": "^1.0",
-        "tobento/service-console": "^1.0.3",
-        "tobento/service-encryption": "^1.0",
-        "tobento/service-storage": "^1.2.5",
-        "tobento/service-database": "^1.1.2",
-        "tobento/service-collection": "^1.0.5",
-        "tobento/service-event": "^1.0",
+        "phpunit/phpunit": "^12.3",
+        "vimeo/psalm": "^6.13",
+        "tobento/service-container": "^2.0",
+        "tobento/service-cache": "^2.0",
+        "tobento/service-clock": "^2.0",
+        "tobento/service-console": "^2.0",
+        "tobento/service-encryption": "^2.0",
+        "tobento/service-storage": "^2.0",
+        "tobento/service-database": "^2.0",
+        "tobento/service-collection": "^2.0",
+        "tobento/service-event": "^2.0",
         "mockery/mockery": "^1.6"
     },
     "autoload": {
