@@ -57,6 +57,7 @@ final class Queue implements QueueInterface
     ) {
         $this->parametersFactory = $parametersFactory ?: new ParametersFactory();
         
+        $storage->table($table);
         $storage->tables()->add(
             table: $table,
             columns: ['id', 'queue', 'job_id', 'name', 'payload', 'parameters', 'priority', 'available_at'],
