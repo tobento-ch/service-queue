@@ -824,8 +824,6 @@ var_dump($queue instanceof QueueInterface);
 
 ```php
 use Tobento\Service\Storage\InMemoryStorage;
-use Tobento\Service\Storage\PdoMySqlStorage;
-use Tobento\Service\Storage\PdoMariaDbStorage;
 use Tobento\Service\Queue\QueueInterface;
 use Tobento\Service\Queue\QueueException;
 
@@ -845,11 +843,12 @@ var_dump($queue instanceof QueueInterface);
 // or throws QueueException on failure.
 ```
 
-**Create ```PdoMySqlStorage::class``` or ```PdoMariaDbStorage::class``` queue**
+**Create ```PdoMySqlStorage::class```, ```PdoMariaDbStorage::class``` queue** or ```PdoSqliteStorage::class``` queue**
 
 ```php
 use Tobento\Service\Storage\PdoMySqlStorage;
 use Tobento\Service\Storage\PdoMariaDbStorage;
+use Tobento\Service\Storage\PdoSqliteStorage;
 use Tobento\Service\Queue\QueueInterface;
 use Tobento\Service\Queue\QueueException;
 
@@ -860,6 +859,7 @@ $queue = $factory->createQueue(name: 'primary', config: [
     // specify the storage:
     'storage' => PdoMySqlStorage::class,
     //'storage' => PdoMariaDbStorage::class,
+    //'storage' => PdoSqliteStorage::class,
     
     // specify the name of the database used:
     'database' => 'name',
