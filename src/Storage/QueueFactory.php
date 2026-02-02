@@ -22,6 +22,7 @@ use Tobento\Service\Storage\JsonFileStorage;
 use Tobento\Service\Storage\InMemoryStorage;
 use Tobento\Service\Storage\PdoMySqlStorage;
 use Tobento\Service\Storage\PdoMariaDbStorage;
+use Tobento\Service\Storage\PdoSqliteStorage;
 use Tobento\Service\Database\DatabasesInterface;
 use Tobento\Service\Database\PdoDatabaseInterface;
 use Psr\Clock\ClockInterface;
@@ -131,6 +132,22 @@ class QueueFactory implements QueueFactoryInterface
             }
 
             return new PdoMariaDbStorage($database->pdo());
+        }
+        
+        if ($config['storage'] === PdoSqliteStorage::class) {
+            if (!isset($config['database'])) {
+                throw new QueueException(sprintf('Missing "database" config on queue %s', $name));
+            }
+            
+            $database = $this->databases?->get($config['database']);
+            
+            if (!$database instanceof PdoDatabaseInterface) {
+                throw new QueueException(
+                    sprintf('Storage "database" config needs to be a PdoDatabase on queue %s!', $name)
+                );
+            }
+
+            return new PdoSqliteStorage($database->pdo());
         }
         
         throw new QueueException(sprintf('Unable to create storage based on config on queue %s', $name));
