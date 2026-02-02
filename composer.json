@@ -1,6 +1,6 @@
 {
     "name": "tobento/service-queue",
-    "version": "2.0",
+    "version": "2.0.1",
     "type": "library",
     "description": "A queue system for processing jobs in background.",
     "keywords": [
