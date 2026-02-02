@@ -23,6 +23,7 @@ use Tobento\Service\Storage\JsonFileStorage;
 use Tobento\Service\Storage\InMemoryStorage;
 use Tobento\Service\Storage\PdoMySqlStorage;
 use Tobento\Service\Storage\PdoMariaDbStorage;
+use Tobento\Service\Storage\PdoSqliteStorage;
 use Tobento\Service\Storage\StorageException;
 use Tobento\Service\Container\Container;
 use Tobento\Service\Clock\FrozenClock;
@@ -127,7 +128,32 @@ class QueueFactoryTest extends TestCase
             'database' => 'sqlite',
             'priority' => 200,
         ]);
-    }    
+    }
+    
+    public function testCreateQueueMethodWithPdoSqliteStorage()
+    {
+        $factory = new QueueFactory(
+            jobProcessor: new JobProcessor(new Container()),
+            clock: new FrozenClock(),
+            databases: new Databases(
+                new PdoDatabase(
+                    pdo: new PDO('sqlite::memory:'),
+                    name: 'sqlite',
+                ),
+            ),
+        );
+        
+        $queue = $factory->createQueue(name: 'primary', config: [
+            'table' => 'jobs',
+            'storage' => PdoSqliteStorage::class,
+            'database' => 'sqlite',
+            'priority' => 200,
+        ]);
+        
+        $this->assertInstanceof(PdoSqliteStorage::class, $queue->storage());
+        $this->assertSame('primary', $queue->name());
+        $this->assertSame(200, $queue->priority());
+    }
     
     public function testCreateQueueMethodThrowsQueueExceptionIfMissingConfig()
     {
