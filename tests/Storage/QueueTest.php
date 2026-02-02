@@ -39,6 +39,22 @@ class InMemoryQueueTest extends TestCase
         
         $this->assertInstanceof(QueueInterface::class, $queue);
     }
+
+    public function testStorageTableNameIsSet()
+    {
+        $queue = new Queue(
+            name: 'primary',
+            jobProcessor: new JobProcessor(new Container()),
+            storage: new InMemoryStorage([]),
+            clock: new FrozenClock(),
+            table: 'jobs',
+            priority: 150,
+        );
+        
+        $storage = $queue->storage();
+        
+        $this->assertSame('jobs', $storage->getTable());
+    }
     
     public function testNameAndPriorityMethods()
     {
