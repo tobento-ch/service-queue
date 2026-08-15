@@ -1,6 +1,6 @@
 {
     "name": "tobento/service-queue",
-    "version": "2.0.1",
+    "version": "2.0.2",
     "type": "library",
     "description": "A queue system for processing jobs in background.",
     "keywords": [
@@ -25,7 +25,8 @@
         "psr/container": "^2.0",
         "psr/simple-cache": "3.0",
         "psr/clock": "^1.0",
-        "tobento/service-autowire": "^2.0"
+        "tobento/service-autowire": "^2.0",
+        "symfony/process": "^7.3"
     },
     "suggest": {
         "tobento/service-console": "To run queue worker via console commands",
