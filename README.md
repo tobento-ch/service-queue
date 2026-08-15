@@ -45,6 +45,7 @@ A queue system for processing jobs in background.
         - [Running Worker Using Commands](#running-worker-using-commands)
     - [Console](#console)
         - [Work Command](#work-command)
+        - [Listen Command](#listen-command)
         - [Clear Command](#clear-command)
     - [Events](#events)
     - [Learn More](#learn-more)
@@ -1082,6 +1083,38 @@ php ap queue:work --queue=primary
 | ```--sleep=3``` | The number of seconds to sleep when no job is available. |
 | ```--max-jobs=0``` | The number of jobs to process before stopping (0 unlimited). |
 | ```--stop-when-empty``` | Stops the worker when the queue is empty. |
+
+### Listen Command
+
+The `queue:listen` command wraps [`queue:work`](#work-command), automatically restarting the worker process after each job (or when the queue empties). This means code changes are picked up on the next job without manually restarting the worker.
+
+> **Note:**
+> `queue:listen` is intended for local development only. It runs as a
+> long-lived process and spawns real subprocesses, both of which are
+> commonly restricted or unavailable on shared hosting. For production,
+> use a process monitor such as Supervisor with `queue:work`, or run
+> `queue:work --stop-when-empty` via a scheduled cron job instead.
+
+**Listening to jobs from all queues**
+```
+php ap queue:listen
+```
+**Listening to jobs from a specific queue only**
+```
+php ap queue:listen --queue=primary
+```
+**Available Options**
+| Option | Description |
+| --- | --- |
+| ```--name=default``` | The name of the worker. |
+| ```--queue=primary``` | The name of the queue to work. |
+| ```--memory=128``` | The memory limit in megabytes. |
+| ```--timeout=60``` | The number of seconds the worker can run. |
+| ```--sleep=3``` | The number of seconds to sleep when no job is available. |
+| ```--max-jobs=1``` | The number of jobs to process before restarting the process. |
+| ```--rest=0``` | The number of seconds to rest between each restarted process. |
+
+Press `Ctrl+C` to stop listening. The current job will be allowed to finish before the process exits.
 
 ### Clear Command
 
